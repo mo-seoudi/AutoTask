@@ -30,14 +30,11 @@ export default function Home() {
         }
         throw new Error(message);
       }
-
       const blob = await response.blob();
       if (!blob.size) throw new Error("The server returned an empty Excel file.");
       const url = URL.createObjectURL(blob);
       setDownloadUrl(url);
-      setStatus("Processing completed. Your updated tracker is ready to download.");
-
-      // Attempt the download automatically, while always leaving a manual download link visible.
+      setStatus("Done. Your updated tracker is ready.");
       const a = document.createElement("a");
       a.href = url;
       a.download = "Uniform Daily Sales Tracker - Updated.xlsx";
@@ -54,51 +51,50 @@ export default function Home() {
 
   return (
     <main>
-      <header className="topbar"><div className="brand">AutoTask</div><div className="pill">Automation Workspace</div></header>
-      <section className="hero">
-        <p className="eyebrow">UNIFORM SALES</p>
-        <h1>Zona Daily Sales Tracker</h1>
-        <p className="intro">Process Zona supplier sales reports and update the matching dates in your Uniform Daily Sales Tracker.</p>
-      </section>
+      <header className="topbar">
+        <div className="brand">AutoTask</div>
+        <div className="pill">Automation Workspace</div>
+      </header>
 
-      <section className="grid">
-        <form className="card" onSubmit={processFiles}>
-          <div className="step">1</div>
-          <h2>Upload tracker</h2>
-          <p>Your current Uniform Daily Sales Tracker workbook.</p>
-          <input name="target" type="file" accept=".xlsx" required disabled={busy} />
+      <section className="workspace">
+        <div className="pageHeading">
+          <div>
+            <p className="eyebrow">UNIFORM SALES</p>
+            <h1>Zona Daily Sales</h1>
+          </div>
+          <p className="intro">Update the Uniform Daily Sales Tracker from Zona reports.</p>
+        </div>
 
-          <div className="divider" />
-          <div className="step">2</div>
-          <h2>Upload supplier report(s)</h2>
-          <p>Use either the combined Sales Report, or the individual RDXB, RAB, FRY and ROSE files.</p>
-          <input name="sources" type="file" accept=".xlsx" multiple required disabled={busy} />
+        <section className="grid">
+          <form className="card" onSubmit={processFiles}>
+            <div className="fieldBlock">
+              <div className="fieldTitle"><span className="step">1</span><div><h2>Tracker</h2><p>Select the current Uniform Daily Sales Tracker.</p></div></div>
+              <input name="target" type="file" accept=".xlsx" required disabled={busy} />
+            </div>
 
-          <button className="processButton" disabled={busy} type="submit">
-            {busy && <span className="spinner" aria-hidden="true" />}
-            <span>{busy ? "Processing…" : "Process & Download"}</span>
-          </button>
+            <div className="divider" />
 
-          {status && <div className={`status ${error ? "statusError" : downloadUrl ? "statusSuccess" : ""}`}>{status}</div>}
-          {downloadUrl && !busy && (
-            <a className="downloadButton" href={downloadUrl} download="Uniform Daily Sales Tracker - Updated.xlsx">
-              Download Updated Tracker
-            </a>
-          )}
-        </form>
+            <div className="fieldBlock">
+              <div className="fieldTitle"><span className="step">2</span><div><h2>Zona report(s)</h2><p>Combined Sales Report, or the four school reports.</p></div></div>
+              <input name="sources" type="file" accept=".xlsx" multiple required disabled={busy} />
+            </div>
 
-        <aside className="card side">
-          <div className="statusRow"><span className="dot pending"/><div><strong>Microsoft 365</strong><small>Connection comes next</small></div></div>
-          <div className="divider" />
-          <h3>Processing rules</h3>
-          <ul>
-            <li>Matches dates to the correct monthly tracker sheet.</li>
-            <li>Writes RDXB, RAB, FRY and ROSE daily sales.</li>
-            <li>Combines Exchange / Shipping Value across all four schools.</li>
-            <li>Uses a combined report when it contains all four campuses.</li>
-            <li>Does not overwrite the original workbook on your computer.</li>
-          </ul>
-        </aside>
+            <button className="processButton" disabled={busy} type="submit">
+              {busy && <span className="spinner" aria-hidden="true" />}
+              <span>{busy ? "Processing…" : "Process & Download"}</span>
+            </button>
+
+            {status && <div className={`status ${error ? "statusError" : downloadUrl ? "statusSuccess" : ""}`}>{status}</div>}
+            {downloadUrl && !busy && <a className="downloadButton" href={downloadUrl} download="Uniform Daily Sales Tracker - Updated.xlsx">Download Updated Tracker</a>}
+          </form>
+
+          <aside className="card side">
+            <div className="statusRow"><span className="dot"/><div><strong>Microsoft 365</strong><small>Not connected yet</small></div></div>
+            <div className="divider compact" />
+            <h3>Next: automatic mode</h3>
+            <p>Connect Outlook, find the latest Zona sales email and update the tracker automatically.</p>
+          </aside>
+        </section>
       </section>
     </main>
   );
