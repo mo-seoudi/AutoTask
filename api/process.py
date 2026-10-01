@@ -60,7 +60,6 @@ def parse_source(file_bytes, filename):
     if not date_col or not total_col or not exchange_col:
         raise ValueError(f"{filename}: Date, TOTAL or Exchange column was not found.")
 
-    # TOTAL is a formula in Zona reports. Sum the numeric transaction columns that feed it.
     transaction_cols = list(range(4, total_col))
     rows = []
     campuses = set()
@@ -90,7 +89,6 @@ def parse_source(file_bytes, filename):
 def choose_rows(parsed):
     combined = [(name, rows, campuses) for name, rows, campuses in parsed if set(SCHOOLS).issubset(campuses)]
     if combined:
-        # Prefer the largest complete combined report and never mix it with individual reports.
         return max(combined, key=lambda item: len(item[1]))[1]
 
     by_school = {}
@@ -106,15 +104,24 @@ def choose_rows(parsed):
 
 def find_target_columns(ws):
     for r in range(1, min(ws.max_row, 15) + 1):
-        vals = {norm(ws.cell(r, c).value): c for c in range(1, ws.max_column + 1)}
+        # Preserve duplicate headings such as the two Date columns in the tracker.
+        header_values = [(norm(ws.cell(r, c).value), c) for c in range(1, ws.max_column + 1)]
         school_cols = {}
         for code, label in SCHOOLS.items():
             aliases = {norm(label), code}
-            school_cols[code] = next((c for h, c in vals.items() if h in aliases), None)
-        exchange = next((c for h, c in vals.items() if h == "EXCHANGE"), None)
-        date_cols = [c for h, c in vals.items() if h == "DATE"]
+            school_cols[code] = next((c for h, c in header_values if h in aliases), None)
+        exchange = next((c for h, c in header_values if h == "EXCHANGE"), None)
+        date_cols = [c for h, c in header_values if h == "DATE"]
         if exchange and all(school_cols.values()) and date_cols:
-            return r, school_cols, exchange, max(date_cols)
+            # The Zona-side Date column (L) can contain formulas such as =A32.
+            # Select the Date column containing the most actual date values instead.
+            def date_score(col):
+                return sum(
+                    1 for rr in range(r + 1, ws.max_row + 1)
+                    if as_date(ws.cell(rr, col).value) is not None
+                )
+            date_col = max(date_cols, key=date_score)
+            return r, school_cols, exchange, date_col
     raise ValueError(f"Could not identify target columns in '{ws.title}'.")
 
 
